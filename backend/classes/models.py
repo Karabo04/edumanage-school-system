@@ -1,7 +1,7 @@
 from django.db import models
 
 class Class(models.Model):
-    name= models.CharField(max_length=10, blank=False)
+    name = models.CharField(max_length=100, blank=False)
     teacher = models.ForeignKey('teachers.Teacher', on_delete=models.CASCADE)
     subject = models.ForeignKey('subjects.Subject', on_delete=models.CASCADE)
 

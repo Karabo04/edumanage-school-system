@@ -1,107 +1,296 @@
-from pyclbr import Class
 from rest_framework import generics, permissions
-from django.shortcuts import render
-from django.db import IntegrityError
-from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.permissions import IsAuthenticated, BasePermission
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
+from django.db import IntegrityError
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.views import APIView
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from messaging.models import Message
 from attendance.models import Attendance
+from fees.models import Fee
+from classes.models import Class
 from exams.models import Exam
 from results.models import Result
+from students.models import Student
 from subjects.models import Subject
 from teachers.models import Teacher
-from classes.models import Class
-from fees.models import Fee
+from .models import UserProfile
 
-from .serializers import AttendanceSerializer, ClassSerializer, ExamSerializer, ResultSerializer, StudentSerializer, SubjectSerializer, TeacherSerializer, FeeSerializer
+from .serializers import (
+    StudentSerializer, TeacherSerializer, ClassSerializer, SubjectSerializer,
+    ExamSerializer, ResultSerializer, AttendanceSerializer, FeeSerializer,
+    UserProfileSerializer, MessageSerializer
+)
+
+# ================= PERMISSIONS =================
+
+class IsTeacher(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and hasattr(request.user, 'userprofile') and request.user.userprofile.role == 'teacher'
+
+
+class IsStudent(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and hasattr(request.user, 'userprofile') and request.user.userprofile.role == 'student'
+
+
+class IsTeacherOrReadOnly(BasePermission):
+    def has_permission(self, request, view):
+        if request.method in ['GET', 'HEAD', 'OPTIONS']:
+            return True
+        return request.user.is_authenticated and hasattr(request.user, 'userprofile') and request.user.userprofile.role == 'teacher'
+
+
+# ================= STUDENT & TEACHER =================
 
 class StudentView(generics.ListCreateAPIView):
     serializer_class = StudentSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    def get_queryset(self):
-        user= self.request.user
-        return Result.objects.filter(user=user)
+    permission_classes = [IsTeacher]
 
-    
+    def get_queryset(self):
+        return Student.objects.all()
+
 
 class TeacherView(generics.ListCreateAPIView):
     serializer_class = TeacherSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    def get_queryset(self):
-        user= self.request.user
-        return Teacher.objects.filter(user=user)
+    permission_classes = [IsTeacherOrReadOnly]
 
+    def get_queryset(self):
+        return Teacher.objects.all()
+
+
+# ================= CLASS =================
 
 class ClassView(generics.ListCreateAPIView):
-    queryset = Class.objects.all()
     serializer_class = ClassSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
-class ExamView(generics.ListCreateAPIView):
-    queryset = Exam.objects.all()
-    serializer_class = ExamSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        if self.request.user.userprofile.role == 'teacher':
+            return Class.objects.filter(teacher__user=self.request.user)
+        return Class.objects.all()
 
+
+# ================= SUBJECT & EXAM =================
 
 class SubjectView(generics.ListCreateAPIView):
     queryset = Subject.objects.all()
     serializer_class = SubjectSerializer
-    permission_classes = [permissions.IsAuthenticated]    
+    permission_classes = [IsTeacher]
 
+
+class ExamView(generics.ListCreateAPIView):
+    queryset = Exam.objects.all()
+    serializer_class = ExamSerializer
+    permission_classes = [IsTeacher]
+
+
+# ================= RESULTS =================
 
 class ResultView(generics.ListCreateAPIView):
     serializer_class = ResultSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsTeacher]
 
     def get_queryset(self):
-        user= self.request.user
-        return Result.objects.filter(user=user).order_by('-created')
+        return Result.objects.all()
 
 
+# ================= ATTENDANCE =================
 
 class AttendanceView(generics.ListCreateAPIView):
     serializer_class = AttendanceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsTeacher]
+
     def get_queryset(self):
-        user= self.request.user
-        return Attendance.objects.filter(user=user).order_by('-created')
-    
+        return Attendance.objects.all().order_by('-date')
+
+
+# ================= FEES =================
 
 class FeeView(generics.ListCreateAPIView):
     serializer_class = FeeSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsTeacher]
+
     def get_queryset(self):
-        user= self.request.user
-        return Fee.objects.filter(user=user).order_by('-created')
-    
+        return Fee.objects.all().order_by('-due_date')
+
+
+# ================= AUTH =================
+
 @csrf_exempt
 def signup(request):
-   if request.method == 'POST':
-        try: 
-           data= JSONParser().parse(request) # Data is dictionary
-           user= User.objects.create_user(username=data['username'], password=data['password'])           
-           user.save()
-           token= Token.objects.create(user=user)
-           return JsonResponse({'token': str(token)}, status=201)
+    if request.method == 'POST':
+        try:
+            data = JSONParser().parse(request)
+
+            user = User.objects.create_user(
+                username=data['username'],
+                password=data['password']
+            )
+
+            # Create profile
+            UserProfile.objects.create(
+                user=user,
+                role=data.get('role', 'student')
+            )
+
+            token = Token.objects.create(user=user)
+
+            return JsonResponse({
+                'token': str(token),
+                'role': data.get('role', 'student')
+            }, status=201)
+
         except IntegrityError:
-            return JsonResponse({'error': 'Username already exists'}, status=400)
+            return JsonResponse({'error': 'Username exists'}, status=400)
+
 
 @csrf_exempt
 def login(request):
     if request.method == 'POST':
-        data= JSONParser().parse(request)
-        user= authenticate(request, username=data['username'], password=data['password'])
+        data = JSONParser().parse(request)
+
+        user = authenticate(
+            request,
+            username=data['username'],
+            password=data['password']
+        )
+
         if user is None:
-            return JsonResponse({'error': 'unable to login. check username and password'}, status=400)
-        else:
-            try:
-                 token= Token.objects.get(user=user)
-            except:
-                token= Token.objects.create(user=user)
-            return JsonResponse({'token': str(token)}, status=201)     
+            return JsonResponse({'error': 'Invalid credentials'}, status=400)
 
-        
+        token, _ = Token.objects.get_or_create(user=user)
 
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+
+        return JsonResponse({
+            'token': str(token),
+            'role': profile.role
+        }, status=200)
+
+
+# ================= STUDENT PERSONAL DATA =================
+
+class StudentProfileView(generics.RetrieveAPIView):
+    serializer_class = StudentSerializer
+    permission_classes = [IsStudent]
+
+    def get_object(self):
+        return Student.objects.get(user=self.request.user)
+
+
+class StudentAttendanceView(generics.ListAPIView):
+    serializer_class = AttendanceSerializer
+    permission_classes = [IsStudent]
+
+    def get_queryset(self):
+        student = Student.objects.get(user=self.request.user)
+        return Attendance.objects.filter(student=student)
+
+
+class StudentResultsView(generics.ListAPIView):
+    serializer_class = ResultSerializer
+    permission_classes = [IsStudent]
+
+    def get_queryset(self):
+        student = Student.objects.get(user=self.request.user)
+        return Result.objects.filter(student=student)
+
+
+class FeesView(generics.ListAPIView):
+    serializer_class = FeeSerializer
+    permission_classes = [IsStudent]
+
+    def get_queryset(self):
+        student = Student.objects.get(user=self.request.user)
+        return Fee.objects.filter(student=student)
+
+
+# ================= MESSAGING =================
+
+class MessageView(generics.ListCreateAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return (Message.objects.filter(sender=user) | Message.objects.filter(receiver=user)).distinct()
+
+    def perform_create(self, serializer):
+        serializer.save(sender=self.request.user)
+
+
+# ================= USER ROLE =================
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def user_profile(request):
+    if hasattr(request.user, 'userprofile'):
+        return Response({'role': request.user.userprofile.role})
+    return Response({'role': 'unknown'})
+
+
+
+
+
+
+class NotificationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        unread_messages = Message.objects.filter(
+            receiver=request.user,
+            is_read=False
+        )
+
+        return Response({
+            "count": unread_messages.count(),
+            "messages": MessageSerializer(unread_messages, many=True).data
+        })    
+
+
+class MarkAsReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        Message.objects.filter(
+            receiver=request.user,
+            is_read=False
+        ).update(is_read=True)
+
+        return Response({"status": "marked as read"})        
+
+
+
+
+
+def send_message(request):
+    # save message logic...
+
+    channel_layer = get_channel_layer()
+
+    async_to_sync(channel_layer.group_send)(
+        "notifications",
+        {
+            "type": "send_notification",
+            "message": "New message received"
+        }
+    )        
+
+
+
+def my_view(request):
+    try:
+        # your logic
+        return JsonResponse({"ok": True})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)    

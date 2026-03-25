@@ -1,5 +1,13 @@
 from django.urls import path
-from .views import StudentView, TeacherView, ClassView, SubjectView, ExamView, ResultView, AttendanceView, signup, login
+from .views import (
+    StudentView, TeacherView, 
+    ClassView, SubjectView, 
+    ExamView, ResultView, 
+    AttendanceView, FeeView,
+    StudentProfileView, StudentAttendanceView, StudentResultsView, FeesView,
+    MessageView, NotificationView, MarkAsReadView,
+    signup, login, user_profile
+)
 
 urlpatterns = [
     path('students/', StudentView.as_view(), name='student-list'),
@@ -9,6 +17,16 @@ urlpatterns = [
     path('exams/', ExamView.as_view(), name='exam-list'),
     path('results/', ResultView.as_view(), name='result-list'),
     path('attendance/', AttendanceView.as_view(), name='attendance-list'),
-    path('signup/', signup, name='signup'),
+    path('fees/', FeeView.as_view(), name='fee-list'),
+    # Student-specific endpoints
+    path('my-profile/', StudentProfileView.as_view(), name='student-profile'),
+    path('my-attendance/', StudentAttendanceView.as_view(), name='student-attendance'),
+    path('my-results/', StudentResultsView.as_view(), name='student-results'),
+    path('my-fees/', FeesView.as_view(), name='student-fees'),
+    path('messages/', MessageView.as_view()),
+    path('user-profile/', user_profile, name='user-profile'),
+    path('notifications/', NotificationView.as_view()),
+    path('mark-read/', MarkAsReadView.as_view()),
+    path('sign-up/', signup, name='signup'),
     path('login/', login, name='login'),
 ]

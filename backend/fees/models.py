@@ -10,6 +10,7 @@ class Fee(models.Model):
         ('Unpaid', 'Unpaid'),
     ]
     status = models.BooleanField(max_length=10, choices=STATUS_CHOICE, default='Unpaid')
+    created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Fee for {self.student} - Amount: {self.amount} - Status: {self.status}"

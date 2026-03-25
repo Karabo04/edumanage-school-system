@@ -4,6 +4,7 @@ class Result(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE)
     exam = models.ForeignKey('exams.Exam', on_delete=models.CASCADE)
     marks_obtained = models.IntegerField()
+    created = models.DateTimeField(auto_now_add=True)
 
 
     def __str__(self):

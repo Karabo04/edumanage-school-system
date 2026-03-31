@@ -189,7 +189,10 @@ def login(request):
 
         token, _ = Token.objects.get_or_create(user=user)
 
-        profile, _ = UserProfile.objects.get_or_create(user=user)
+        profile, created = UserProfile.objects.get_or_create(
+            user=user,
+            defaults={'role': 'teacher' if user.is_superuser else 'student'}
+        )
 
         return JsonResponse({
             'token': str(token),

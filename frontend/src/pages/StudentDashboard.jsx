@@ -13,7 +13,11 @@ export function StudentDashboard() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token && API.defaults.headers.common["Authorization"]) {
-      API.get("my-results/").then((res) => setResults(res.data)).catch((err) => {
+      API.get("my-results/").then((res) => {
+        // Handle paginated response - extract results array
+        const resultsData = res.data?.results || res.data || [];
+        setResults(Array.isArray(resultsData) ? resultsData : []);
+      }).catch((err) => {
         console.error("Failed to load results:", err);
         setResults([]);
       });
@@ -33,17 +37,26 @@ export function StudentDashboard() {
     }
   }, []);
 
-  const chartData = {
-    labels: results.map((r) => `Exam ${r.exam}`),
+  const chartData = results && results.length > 0 ? {
+    labels: results.map((r) => `Exam ${r.exam || r.id || 'Unknown'}`),
     datasets: [
       {
         label: "Marks Obtained",
-        data: results.map((r) => r.marks_obtained),
+        data: results.map((r) => r.marks_obtained || r.score || 0),
         backgroundColor: "rgba(34, 197, 94, 0.6)",
         borderColor: "rgba(34, 197, 94, 1)",
         borderWidth: 1,
       },
     ],
+  } : {
+    labels: ['No Data'],
+    datasets: [{
+      label: "Marks Obtained",
+      data: [0],
+      backgroundColor: "rgba(156, 163, 175, 0.6)",
+      borderColor: "rgba(156, 163, 175, 1)",
+      borderWidth: 1,
+    }],
   };
 
   const chartOptions = {

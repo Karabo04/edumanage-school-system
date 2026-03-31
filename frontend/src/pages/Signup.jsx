@@ -49,11 +49,12 @@ export default function Signup() {
       
       console.log("Signup response:", res);
       
-      const { token, role } = res.data;
+      const { token, role, username } = res.data;
 
       // Auto-login after successful signup
       localStorage.setItem("token", token);
       localStorage.setItem("role", role);
+      localStorage.setItem("username", username);
       setAuthToken(token);
 
       setSuccess("Account created successfully! Redirecting...");

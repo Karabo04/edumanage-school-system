@@ -16,10 +16,11 @@ export default function Login() {
       const res = await API.post("login/", form);
       console.log("Login response:", res);
       
-      const { token, role } = res.data;
+      const { token, role, username } = res.data;
 
       localStorage.setItem("token", token);
       localStorage.setItem("role", role);
+      localStorage.setItem("username", username);
       setAuthToken(token);
 
       navigate(role === "teacher" ? "/teacher" : "/student");

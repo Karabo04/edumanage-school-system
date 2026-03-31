@@ -196,7 +196,8 @@ def login(request):
 
         return JsonResponse({
             'token': str(token),
-            'role': profile.role
+            'role': profile.role,
+            'username': user.username
         }, status=200)
     
     return JsonResponse({'error': 'Method not allowed'}, status=405)

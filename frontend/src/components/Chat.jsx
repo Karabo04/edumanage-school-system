@@ -6,6 +6,7 @@ export function Chat() {
   const [content, setContent] = useState("");
   const [receiver, setReceiver] = useState("");
   const [users, setUsers] = useState([]);
+  const [currentUsername, setCurrentUsername] = useState("");
 
   const fetchMessages = async () => {
     try {
@@ -41,6 +42,14 @@ export function Chat() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    // Get current username from localStorage
+    const username = localStorage.getItem("username");
+    if (username) {
+      setCurrentUsername(username);
+    }
+  }, []);
+
   const sendMessage = async () => {
     try {
       if (!content.trim()) {
@@ -67,7 +76,9 @@ export function Chat() {
       <div className="h-40 overflow-y-scroll border p-2 mb-2">
         {messages.map((m) => (
           <div key={m.id} className="mb-2">
-            <b className="text-sm">{m.sender}</b>: <span className="text-sm">{m.content}</span>
+            <b className="text-sm">
+              {m.sender === currentUsername ? "you" : m.sender}
+            </b>: <span className="text-sm">{m.content}</span>
           </div>
         ))}
       </div>

@@ -47,7 +47,19 @@ export default function Login() {
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })} 
         />
-        <button className="bg-blue-500 text-white w-full p-2">Login</button>
+        <button className="bg-blue-500 text-white w-full p-2 mb-2">Login</button>
+        
+        <div className="text-center">
+          <span className="text-sm text-gray-600">Don't have an account? </span>
+          <button 
+            type="button"
+            onClick={() => navigate("/signup")}
+            className="text-blue-500 hover:text-blue-700 text-sm font-medium"
+          >
+            Sign up
+          </button>
+        </div>
+        
         <p className="text-sm text-gray-500 mt-4">Test: teacher1 / password123</p>
       </form>
     </div>

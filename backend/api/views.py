@@ -237,7 +237,7 @@ class StudentResultsView(generics.ListAPIView):
     def get_queryset(self):
         try:
             student = Student.objects.get(user=self.request.user)
-            return Result.objects.filter(student=student)
+            return Result.objects.filter(student=student.user)
         except Student.DoesNotExist:
             # Return empty queryset if no Student record exists for this user
             return Result.objects.none()

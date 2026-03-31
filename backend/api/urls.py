@@ -5,7 +5,7 @@ from .views import (
     ExamView, ResultView, 
     AttendanceView, FeeView,
     StudentProfileView, StudentAttendanceView, StudentResultsView, FeesView,
-    MessageView, NotificationView, MarkAsReadView,
+    MessageView, NotificationView, MarkAsReadView, UsersView,
     signup, login, user_profile
 )
 
@@ -23,6 +23,7 @@ urlpatterns = [
     path('my-attendance/', StudentAttendanceView.as_view(), name='student-attendance'),
     path('my-results/', StudentResultsView.as_view(), name='student-results'),
     path('my-fees/', FeesView.as_view(), name='student-fees'),
+    path('users/', UsersView.as_view(), name='user-list'),
     path('messages/', MessageView.as_view()),
     path('user-profile/', user_profile, name='user-profile'),
     path('notifications/', NotificationView.as_view()),

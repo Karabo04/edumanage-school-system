@@ -1,3 +1,4 @@
+import json
 from rest_framework import generics, permissions
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -27,7 +28,7 @@ from .models import UserProfile
 from .serializers import (
     StudentSerializer, TeacherSerializer, ClassSerializer, SubjectSerializer,
     ExamSerializer, ResultSerializer, AttendanceSerializer, FeeSerializer,
-    UserProfileSerializer, MessageSerializer
+    UserProfileSerializer, MessageSerializer, UserSerializer
 )
 
 # ================= PERMISSIONS =================
@@ -156,13 +157,32 @@ def signup(request):
 @csrf_exempt
 def login(request):
     if request.method == 'POST':
-        data = JSONParser().parse(request)
+        try:
+            # Handle both JSON and form data
+            if request.content_type == 'application/json':
+                data = json.loads(request.body) if request.body else {}
+            else:
+                data = request.POST.dict()
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {e}")
+            print(f"Request body: {request.body}")
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        username = data.get('username')
+        password = data.get('password')
+
+        print(f"Login attempt - Username: {username}, Password exists: {bool(password)}")
+
+        if not username or not password:
+            return JsonResponse({'error': 'Username and password required'}, status=400)
 
         user = authenticate(
             request,
-            username=data['username'],
-            password=data['password']
+            username=username,
+            password=password
         )
+
+        print(f"Authentication result: {user}")
 
         if user is None:
             return JsonResponse({'error': 'Invalid credentials'}, status=400)
@@ -175,6 +195,8 @@ def login(request):
             'token': str(token),
             'role': profile.role
         }, status=200)
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
 # ================= STUDENT PERSONAL DATA =================
@@ -215,6 +237,16 @@ class FeesView(generics.ListAPIView):
 
 
 # ================= MESSAGING =================
+
+class UsersView(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Exclude the current user from the list
+        return User.objects.exclude(id=self.request.user.id)
+
 
 class MessageView(generics.ListCreateAPIView):
     serializer_class = MessageSerializer

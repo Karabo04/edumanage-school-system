@@ -5,22 +5,15 @@ export function Notifications({ count = 0 }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const socket = new WebSocket("ws://127.0.0.1:8000/ws/notifications/");
-
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-
-      setMessages((prev) => [...prev, data.message]);
-    };
-
-    return () => socket.close();
+    // WebSocket not available in Django dev server - disabled
+    // For production, install Daphne: pip install daphne
+    // Then update asgi.py and run: daphne -b 127.0.0.1 -p 8000 backend.asgi:application
   }, []);
 
   return (
     <div className="relative">
       <button onClick={() => setOpen(!open)} className="relative text-2xl">
         🔔
-
         {count > 0 && (
           <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
             {count}

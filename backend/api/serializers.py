@@ -90,6 +90,16 @@ class LoginSerializer(serializers.Serializer):
 
 
 class MessageSerializer(serializers.ModelSerializer):
+    sender = serializers.StringRelatedField(read_only=True)
+    
     class Meta:
         model = Message
-        fields = '__all__'
+        fields = ['id', 'sender', 'receiver', 'content', 'timestamp', 'is_read']
+        read_only_fields = ['id', 'sender', 'timestamp', 'is_read']
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'first_name', 'last_name']
+        read_only_fields = ['id']

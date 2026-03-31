@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import API from "../services/api";
+import API from "../Services/api";
 import { Sidebar } from "../components/SideBar";
 import { Chat } from "../components/Chat";
 import { Notifications } from "../components/Notifications";
@@ -11,23 +11,53 @@ export function StudentDashboard() {
 
   // Fetch student results
   useEffect(() => {
-    API.get("student-results/").then((res) => setResults(res.data));
+    const token = localStorage.getItem("token");
+    if (token && API.defaults.headers.common["Authorization"]) {
+      API.get("student-results/").then((res) => setResults(res.data)).catch((err) => {
+        console.error("Failed to load results:", err);
+        setResults([]);
+      });
+    }
   }, []);
 
   // Fetch notifications
   useEffect(() => {
-    API.get("notifications/").then((res) => {
-      setNotifications(res.data.count);
-    });
+    const token = localStorage.getItem("token");
+    if (token && API.defaults.headers.common["Authorization"]) {
+      API.get("notifications/").then((res) => {
+        setNotifications(res.data.count || 0);
+      }).catch((err) => {
+        console.error("Failed to load notifications:", err);
+        setNotifications(0);
+      });
+    }
   }, []);
 
   const chartData = {
     labels: results.map((r) => `Exam ${r.exam}`),
     datasets: [
       {
+        label: "Marks Obtained",
         data: results.map((r) => r.marks_obtained),
+        backgroundColor: "rgba(34, 197, 94, 0.6)",
+        borderColor: "rgba(34, 197, 94, 1)",
+        borderWidth: 1,
       },
     ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        display: true,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+      },
+    },
   };
 
   return (
@@ -49,7 +79,7 @@ export function StudentDashboard() {
         {/* Results Chart */}
         <div className="bg-white rounded-2xl shadow-md p-5">
           <h2 className="text-lg font-semibold mb-4">My Results</h2>
-          <Bar data={chartData} />
+          <Bar data={chartData} options={chartOptions} />
         </div>
 
         {/* Chat Section */}

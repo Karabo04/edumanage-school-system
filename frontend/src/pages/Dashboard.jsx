@@ -10,22 +10,52 @@ export function TeacherDashboard() {
   const [notifications, setNotifications] = useState(0);
 
   useEffect(() => {
-    API.get("classes/").then((res) => setClasses(res.data));
+    const token = localStorage.getItem("token");
+    if (token && API.defaults.headers.common["Authorization"]) {
+      API.get("classes/").then((res) => setClasses(res.data.results || res.data)).catch((err) => {
+        console.error("Failed to load classes:", err);
+        setClasses([]);
+      });
+    }
   }, []);
 
   useEffect(() => {
-    API.get("notifications/").then((res) => {
-      setNotifications(res.data.count);
-    });
+    const token = localStorage.getItem("token");
+    if (token && API.defaults.headers.common["Authorization"]) {
+      API.get("notifications/").then((res) => {
+        setNotifications(res.data.count || 0);
+      }).catch((err) => {
+        console.error("Failed to load notifications:", err);
+        setNotifications(0);
+      });
+    }
   }, []);
 
   const chartData = {
     labels: ["Classes"],
     datasets: [
       {
+        label: "Number of Classes",
         data: [classes.length],
+        backgroundColor: "rgba(59, 130, 246, 0.6)",
+        borderColor: "rgba(59, 130, 246, 1)",
+        borderWidth: 1,
       },
     ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        display: true,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+      },
+    },
   };
 
   return (
@@ -48,7 +78,7 @@ export function TeacherDashboard() {
         {/* Stats Card */}
         <div className="bg-white rounded-2xl shadow-md p-5">
           <h2 className="text-lg font-semibold mb-4">Overview</h2>
-          <Bar data={chartData} />
+          <Bar data={chartData} options={chartOptions} />
         </div>
 
         {/* Chat Section */}

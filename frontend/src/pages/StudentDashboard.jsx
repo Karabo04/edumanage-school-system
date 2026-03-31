@@ -13,7 +13,7 @@ export function StudentDashboard() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token && API.defaults.headers.common["Authorization"]) {
-      API.get("student-results/").then((res) => setResults(res.data)).catch((err) => {
+      API.get("my-results/").then((res) => setResults(res.data)).catch((err) => {
         console.error("Failed to load results:", err);
         setResults([]);
       });

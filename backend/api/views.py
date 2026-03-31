@@ -210,7 +210,11 @@ class StudentProfileView(generics.RetrieveAPIView):
     permission_classes = [IsStudent]
 
     def get_object(self):
-        return Student.objects.get(user=self.request.user)
+        try:
+            return Student.objects.get(user=self.request.user)
+        except Student.DoesNotExist:
+            # Return None if no Student record exists for this user
+            return None
 
 
 class StudentAttendanceView(generics.ListAPIView):
@@ -218,8 +222,12 @@ class StudentAttendanceView(generics.ListAPIView):
     permission_classes = [IsStudent]
 
     def get_queryset(self):
-        student = Student.objects.get(user=self.request.user)
-        return Attendance.objects.filter(student=student)
+        try:
+            student = Student.objects.get(user=self.request.user)
+            return Attendance.objects.filter(student=student)
+        except Student.DoesNotExist:
+            # Return empty queryset if no Student record exists for this user
+            return Attendance.objects.none()
 
 
 class StudentResultsView(generics.ListAPIView):
@@ -227,8 +235,12 @@ class StudentResultsView(generics.ListAPIView):
     permission_classes = [IsStudent]
 
     def get_queryset(self):
-        student = Student.objects.get(user=self.request.user)
-        return Result.objects.filter(student=student)
+        try:
+            student = Student.objects.get(user=self.request.user)
+            return Result.objects.filter(student=student)
+        except Student.DoesNotExist:
+            # Return empty queryset if no Student record exists for this user
+            return Result.objects.none()
 
 
 class FeesView(generics.ListAPIView):
@@ -236,8 +248,12 @@ class FeesView(generics.ListAPIView):
     permission_classes = [IsStudent]
 
     def get_queryset(self):
-        student = Student.objects.get(user=self.request.user)
-        return Fee.objects.filter(student=student)
+        try:
+            student = Student.objects.get(user=self.request.user)
+            return Fee.objects.filter(student=student)
+        except Student.DoesNotExist:
+            # Return empty queryset if no Student record exists for this user
+            return Fee.objects.none()
 
 
 # ================= MESSAGING =================

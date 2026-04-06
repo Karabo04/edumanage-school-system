@@ -1,9 +1,9 @@
 from django.urls import path
 from .views import (
-    StudentView, TeacherView, 
+    StudentView, StudentDetailView, TeacherView, 
     ClassView, SubjectView, 
-    ExamView, ResultView, 
-    AttendanceView, FeeView,
+    ExamView, ResultView, ExamResultsView,
+    AttendanceView, ClassAttendanceView, FeeView,
     StudentProfileView, StudentAttendanceView, StudentResultsView, FeesView,
     MessageView, NotificationView, MarkAsReadView, UsersView,
     signup, login, user_profile
@@ -11,12 +11,15 @@ from .views import (
 
 urlpatterns = [
     path('students/', StudentView.as_view(), name='student-list'),
+    path('students/<int:pk>/', StudentDetailView.as_view(), name='student-detail'),
     path('teachers/', TeacherView.as_view(), name='teacher-list'),
     path('classes/', ClassView.as_view(), name='class-list'),
     path('subjects/', SubjectView.as_view(), name='subject-list'),
     path('exams/', ExamView.as_view(), name='exam-list'),
+    path('exam-results/', ExamResultsView.as_view(), name='exam-results'),
     path('results/', ResultView.as_view(), name='result-list'),
     path('attendance/', AttendanceView.as_view(), name='attendance-list'),
+    path('class-attendance/', ClassAttendanceView.as_view(), name='class-attendance'),
     path('fees/', FeeView.as_view(), name='fee-list'),
     # Student-specific endpoints
     path('my-profile/', StudentProfileView.as_view(), name='student-profile'),

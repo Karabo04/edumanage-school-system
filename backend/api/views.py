@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
-from django.db import IntegrityError
+from django.db import models
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.views import APIView
@@ -57,7 +57,34 @@ class StudentView(generics.ListCreateAPIView):
     permission_classes = [IsTeacher]
 
     def get_queryset(self):
-        return Student.objects.all()
+        queryset = Student.objects.all()
+        
+        # Search by name
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(
+                models.Q(first_name__icontains=search) | 
+                models.Q(last_name__icontains=search) |
+                models.Q(user__username__icontains=search)
+            )
+        
+        # Filter by grade level (student_class)
+        grade = self.request.query_params.get('grade', None)
+        if grade:
+            queryset = queryset.filter(student_class__name__icontains=grade)
+        
+        # Filter by subject
+        subject = self.request.query_params.get('subject', None)
+        if subject:
+            queryset = queryset.filter(student_class__subject__name__icontains=subject)
+        
+        return queryset
+
+
+class StudentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = StudentSerializer
+    permission_classes = [IsTeacher]
+    queryset = Student.objects.all()
 
 
 class TeacherView(generics.ListCreateAPIView):
@@ -104,6 +131,35 @@ class ResultView(generics.ListCreateAPIView):
         return Result.objects.all()
 
 
+class ExamResultsView(generics.ListAPIView):
+    serializer_class = ResultSerializer
+    permission_classes = [IsTeacher]
+
+    def get_queryset(self):
+        exam_id = self.request.query_params.get('exam_id')
+        if exam_id:
+            return Result.objects.filter(exam_id=exam_id)
+        return Result.objects.none()
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        
+        # Calculate class average
+        if queryset.exists():
+            percentages = [result.percentage for result in queryset]
+            average_percentage = sum(percentages) / len(percentages) if percentages else 0
+        else:
+            average_percentage = 0
+        
+        response_data = {
+            'results': data,
+            'class_average_percentage': round(average_percentage, 2)
+        }
+        return Response(response_data)
+
+
 # ================= ATTENDANCE =================
 
 class AttendanceView(generics.ListCreateAPIView):
@@ -112,6 +168,17 @@ class AttendanceView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         return Attendance.objects.all().order_by('-date')
+
+
+class ClassAttendanceView(generics.ListAPIView):
+    serializer_class = StudentSerializer
+    permission_classes = [IsTeacher]
+
+    def get_queryset(self):
+        class_id = self.request.query_params.get('class_id')
+        if class_id:
+            return Student.objects.filter(student_class_id=class_id)
+        return Student.objects.none()
 
 
 # ================= FEES =================

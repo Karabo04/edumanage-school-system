@@ -30,14 +30,64 @@ class StudentSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
     date_of_birth = serializers.DateField(required=True)
     enrollment_date = serializers.DateField(required=True)
+    attendance_percentage = serializers.ReadOnlyField()
+    attendance_flag = serializers.ReadOnlyField()
+    grade = serializers.CharField(source='student_class.name', read_only=True)
+    subject = serializers.CharField(source='student_class.subject.name', read_only=True)
+    marks = serializers.SerializerMethodField()
     
     class Meta:
         model = Student
-        fields = ['id', 'user', 'first_name', 'last_name', 'email', 'date_of_birth', 'student_class', 'enrollment_date']
+        fields = ['id', 'first_name', 'last_name', 'email', 'date_of_birth', 'student_class', 'enrollment_date', 'attendance_percentage', 'attendance_flag', 'grade', 'subject', 'marks']
+        read_only_fields = ['user', 'attendance_percentage', 'attendance_flag', 'grade', 'subject', 'marks']        
+    def get_marks(self, obj):
+        from results.models import Result
+        results = Result.objects.filter(student=obj.user).select_related('exam__subject')
+        marks_data = []
+        for result in results:
+            marks_data.append({
+                'subject': result.exam.subject.name,
+                'exam': result.exam.date.strftime('%Y-%m-%d'),
+                'marks_obtained': result.marks_obtained,
+                'total_marks': result.exam.total_marks,
+                'percentage': result.percentage,
+                'grade': result.grade
+            })
+        return marks_data
+        
+    def create(self, validated_data):
+        try:
+            # Create the User first
+            user_data = {
+                'username': validated_data['email'],  # Use email as username
+                'email': validated_data['email'],
+                'first_name': validated_data['first_name'],
+                'last_name': validated_data['last_name'],
+                'password': 'defaultpassword123'  # Default password - should be changed later
+            }
+            user = User.objects.create_user(**user_data)
+            
+            # Create UserProfile
+            UserProfile.objects.create(user=user, role='student')
+            
+            # Create Student
+            student = Student.objects.create(
+                user=user,
+                first_name=validated_data['first_name'],
+                last_name=validated_data['last_name'],
+                email=validated_data['email'],
+                date_of_birth=validated_data['date_of_birth'],
+                student_class=validated_data['student_class'],
+                enrollment_date=validated_data['enrollment_date']
+            )
+            return student
+        except Exception as e:
+            print(f"Error creating student: {e}")
+            raise
         
     def validate_email(self, value):
-        if Student.objects.filter(email=value).exists():
-            raise serializers.ValidationError("A student with this email already exists.")
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
         return value
 
 
@@ -59,9 +109,12 @@ class ExamSerializer(serializers.ModelSerializer):
 
 
 class ResultSerializer(serializers.ModelSerializer):
+    percentage = serializers.ReadOnlyField()
+    grade = serializers.ReadOnlyField()
+    
     class Meta:
         model = Result
-        fields = ['id', 'student', 'exam', 'marks_obtained']
+        fields = ['id', 'student', 'exam', 'marks_obtained', 'percentage', 'grade']
 
 
 class AttendanceSerializer(serializers.ModelSerializer):

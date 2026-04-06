@@ -1,47 +1,75 @@
-# EduManage - School Management System
+# EduManage — School
+Management System
 
-A comprehensive school management system built with Django REST Framework backend and React frontend, designed to streamline educational administration and enhance communication between students, teachers, and administrators.
+System Development N5
+Project
+
+ 
+
+## About
+
+A browser-based school
+management system built with React.
+
+Manage student records,
+grades, and attendance.
+
+ 
+
+## Student Details
+
+- Name: Karabo Shaun Nqambi
+
+- Student No: 20240219017
+
+- Institution: Eagleview Graduate Institute 
+
+- Year: 2026
+
+
+
+
 
 ## 🚀 Features
 
 ### Authentication & User Management
-- **Role-based Access Control**: Separate interfaces for students, teachers, and administrators
-- **Secure Authentication**: Token-based authentication with Django REST Framework
-- **User Registration**: Signup functionality with role assignment
-- **Profile Management**: Personalized user profiles and settings
+- Role-based Access Control: Separate interfaces for students, teachers, and administrators
+- Secure Authentication: Token-based authentication with Django REST Framework
+- User Registration: Signup functionality with role assignment
+- Profile Management: Personalized user profiles and settings
 
 ### Student Portal
-- **Dashboard**: Personalized dashboard with quick access to important information
-- **Academic Results**: Visual representation of exam results with interactive charts
-- **Attendance Tracking**: View personal attendance records
-- **Fee Management**: Track fee payments and outstanding balances
-- **Notifications**: Real-time notifications for important updates
+- Dashboard: Personalized dashboard with quick access to important information
+- Academic Results: Visual representation of exam results with interactive charts
+- Attendance Tracking: View personal attendance records
+- Fee Management: Track fee payments and outstanding balances
+- Notifications: Real-time notifications for important updates
 
 ### Teacher Portal
-- **Class Management**: Manage assigned classes and students
-- **Exam Management**: Create and manage examinations
-- **Result Management**: Record and update student exam results
-- **Attendance Management**: Mark and track student attendance
-- **Communication**: Send messages and announcements to students
+- Class Management: Manage assigned classes and students
+- Exam Management: Create and manage examinations
+- Result Management: Record and update student exam results
+- Attendance Management: Mark and track student attendance
+- Communication: Send messages and announcements to students
 
 ### Administrative Features
-- **Student Management**: Add, update, and manage student records
-- **Teacher Management**: Manage teaching staff information
-- **Class Management**: Organize classes and assign teachers
-- **Subject Management**: Define curriculum subjects
-- **Fee Management**: Set up and manage fee structures
+- Student Management: Add, update, and manage student records
+- Teacher Management: Manage teaching staff information
+- Class Management: Organize classes and assign teachers
+- Subject Management: Define curriculum subjects
+- Fee Management: Set up and manage fee structures
 
 ### Communication System
-- **Real-time Messaging**: Built with Django Channels for WebSocket communication
-- **Chat Interface**: Interactive chat between students and teachers
-- **Notifications**: System-wide notification system
-- **Message History**: Persistent message storage and retrieval
+- Real-time Messaging: Built with Django Channels for WebSocket communication
+- Chat Interface: Interactive chat between students and teachers
+- Notifications: System-wide notification system
+- Message History: Persistent message storage and retrieval
 
 ### Data Visualization
-- **Interactive Charts**: Chart.js integration for result visualization
-- **Performance Analytics**: Visual representation of academic performance
-- **Attendance Reports**: Graphical attendance tracking
-- **Fee Reports**: Payment status visualization
+- Interactive Charts: Chart.js integration for result visualization
+- Performance Analytics: Visual representation of academic performance
+- Attendance Reports: Graphical attendance tracking
+- Fee Reports: Payment status visualization
 
 ## 🛠️ Technology Stack
 
